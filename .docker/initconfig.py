@@ -11,9 +11,7 @@ def main():
     telegram_bot_token = os.environ["BOT_TOKEN"]
     update_interval = os.environ["UPDATE_INTERVAL"]
 
-    config = {}
-    config["telegram_token"] = telegram_bot_token
-    config["update_interval"] = update_interval
+    config = {"telegram_token": telegram_bot_token, "update_interval": update_interval}
 
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     filepath = os.path.join(base_path, "resources/credentials.json")

@@ -5,3 +5,4 @@ resources/userdata/*
 !resources/sample-credentials.json
 venv
 .idea/
+/.pytest_cache/
