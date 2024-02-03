@@ -1,15 +1,17 @@
 # /bin/bash/python/
 
-from telegram.error import (TelegramError, Forbidden)
-from telegram.constants import ParseMode
-from multiprocessing.dummy import Pool as ThreadPool
-from threading import Thread as RunningThread
-from util.datehandler import DateHandler
-from util.feedhandler import FeedHandler
 import datetime
 import threading
 import traceback
+from multiprocessing.dummy import Pool as ThreadPool
+from threading import Thread as RunningThread
 from time import sleep
+
+from telegram.constants import ParseMode
+from telegram.error import (TelegramError, Forbidden)
+
+from util.datehandler import DateHandler
+from util.feedhandler import FeedHandler
 
 
 class BatchProcess(threading.Thread):
@@ -59,8 +61,8 @@ class BatchProcess(threading.Thread):
                 except:
                     traceback.print_exc()
                     message = "Something went wrong when I tried to parse the URL: \n\n " + \
-                        url[0] + "\n\nCould you please check that for me? Remove the url from your subscriptions " \
-                                 "using the /remove command, it seems like it does not work anymore!"
+                              url[0] + "\n\nCould you please check that for me? Remove the url from your subscriptions " \
+                                       "using the /remove command, it seems like it does not work anymore!"
                     self.bot.send_message(
                         chat_id=user[0], text=message, parse_mode=ParseMode.HTML)
 
@@ -68,12 +70,12 @@ class BatchProcess(threading.Thread):
             DateHandler.get_datetime_now()))
 
     def send_newest_messages(self, url, post, user):
-        post_update_date = DateHandler.parse_datetime(datetime=post.updated)
-        url_update_date = DateHandler.parse_datetime(datetime=url[1])
+        post_update_date = DateHandler.parse_datetime(timestamp=post.updated)
+        url_update_date = DateHandler.parse_datetime(timestamp=url[1])
 
         if post_update_date > url_update_date:
             message = "[" + user[7] + "] <a href='" + post.link + \
-                "'>" + post.title + "</a>"
+                      "'>" + post.title + "</a>"
             try:
                 self.bot.send_message(
                     chat_id=user[0], text=message, parse_mode=ParseMode.HTML)

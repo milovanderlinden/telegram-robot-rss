@@ -1,5 +1,6 @@
-import feedparser
 import re
+
+import feedparser
 
 
 class FeedHandler(object):
@@ -41,7 +42,7 @@ class FeedHandler(object):
     @staticmethod
     def format_url_string(string):
         """
-        Formats a given url as string so it matches http(s)://adress.domain.
+        Formats a given url as string, so it matches http(s)://address.domain.
         This should be called before parsing the url, to make sure it is parsable
         """
 

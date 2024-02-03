@@ -1,6 +1,7 @@
 import sqlite3
+
+from util.datehandler import DateHandler
 from util.filehandler import FileHandler
-from util.datehandler import DateHandler as dh
 
 
 class DatabaseHandler(object):
@@ -23,12 +24,13 @@ class DatabaseHandler(object):
         """Adds a user to sqlite database
 
         Args:
-            param1 (int): The telegram_id of a user.
-            param2 (str): The username of a user.
-            param3 (str): The firstname of a user.
-            param4 (str): The lastname of a user.
-            param5 (str): The language_code of a user.
-            param6 (str): The is_bot flag of a user.
+            telegram_id (int): The telegram_id of a user.
+            username (str): The username of a user.
+            firstname (str): The firstname of a user.
+            lastname (str): The lastname of a user.
+            language_code (str): The language_code of a user.
+            is_bot (bool): The is_bot flag of a user.
+            is_active (bool): User active or inactive.
         """
 
         conn = sqlite3.connect(self.database_path)
@@ -44,7 +46,7 @@ class DatabaseHandler(object):
         """Removes a user to sqlite database
 
         Args:
-            param1 (int): The telegram_id of a user.
+            telegram_id (int): The telegram_id of a user.
         """
 
         conn = sqlite3.connect(self.database_path)
@@ -60,8 +62,8 @@ class DatabaseHandler(object):
         """Updates a user to sqlite database
 
         Args:
-            param1 (int): The telegram_id of a user.
-            param2 (kwargs): The attributes to be updated of a user.
+            telegram_id (int): The telegram_id of a user.
+            (kwargs): The attributes to be updated of a user.
         """
 
         conn = sqlite3.connect(self.database_path)
@@ -70,9 +72,8 @@ class DatabaseHandler(object):
         sql_command = "UPDATE user SET "
         for key in kwargs:
             sql_command = sql_command + \
-                str(key) + "='" + str(kwargs[key]) + "', "
-        sql_command = sql_command[:-2] + \
-            " WHERE telegram_id=" + str(telegram_id)
+                          str(key) + "='" + str(kwargs[key]) + "', "
+        sql_command = sql_command[:-2] + " WHERE telegram_id=" + str(telegram_id)
 
         cursor.execute(sql_command)
 
@@ -83,7 +84,7 @@ class DatabaseHandler(object):
         """Returns a user by its id
 
         Args:
-            param1 (int): The telegram_id of a user.
+            telegram_id (int): The telegram_id of a user.
 
         Returns:
             list: The return value. A list containing all attributes of a user.
@@ -105,7 +106,7 @@ class DatabaseHandler(object):
         cursor = conn.cursor()
 
         cursor.execute("INSERT OR IGNORE INTO web (url, last_updated) VALUES (?,?)",
-                       (url, dh.get_datetime_now()))
+                       (url, DateHandler.get_datetime_now()))
 
         conn.commit()
         conn.close()
@@ -130,7 +131,7 @@ class DatabaseHandler(object):
         sql_command = "UPDATE web SET "
         for key in kwargs:
             sql_command = sql_command + \
-                str(key) + "='" + str(kwargs[key]) + "', "
+                          str(key) + "='" + str(kwargs[key]) + "', "
         if len(kwargs) == 0:
             sql_command = sql_command + " WHERE url='" + str(url) + "';"
         else:
@@ -207,7 +208,8 @@ class DatabaseHandler(object):
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT web.url, web_user.alias, web.last_updated FROM web, web_user WHERE web_user.url = web.url AND web_user.telegram_id =" +
+            "SELECT web.url, web_user.alias, web.last_updated FROM web, web_user WHERE web_user.url = web.url AND "
+            "web_user.telegram_id =" +
             str(telegram_id) + " AND web_user.alias ='" + str(alias) + "';")
 
         result = cursor.fetchone()
@@ -222,7 +224,8 @@ class DatabaseHandler(object):
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT web.url, web_user.alias, web.last_updated FROM web, web_user WHERE web_user.url = web.url AND web_user.telegram_id =" +
+            "SELECT web.url, web_user.alias, web.last_updated FROM web, web_user WHERE web_user.url = web.url AND "
+            "web_user.telegram_id =" +
             str(telegram_id) + ";")
 
         result = cursor.fetchall()
@@ -237,7 +240,9 @@ class DatabaseHandler(object):
         cursor = conn.cursor()
 
         cursor.execute(
-            "SELECT user.*, web_user.alias FROM user, web_user WHERE web_user.telegram_id = user.telegram_id AND web_user.url ='" + str(url) + "';")
+            "SELECT user.*, web_user.alias FROM user, web_user WHERE web_user.telegram_id = user.telegram_id AND "
+            "web_user.url ='" + str(
+                url) + "';")
         result = cursor.fetchall()
 
         conn.commit()

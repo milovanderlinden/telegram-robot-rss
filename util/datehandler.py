@@ -1,5 +1,6 @@
-import pytz
 import datetime
+
+import pytz
 from dateutil import parser
 
 
@@ -7,11 +8,10 @@ class DateHandler:
 
     @staticmethod
     def get_datetime_now():
-
         # Strip seconds from datetime
-        datestring = str(
+        date_string = str(
             datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"))
-        naive_date = datetime.datetime.utcnow().strptime(datestring, "%Y-%m-%d %H:%M:%S")
+        naive_date = datetime.datetime.utcnow().strptime(date_string, "%Y-%m-%d %H:%M:%S")
 
         # Make datetime aware of timezone
         aware_date = pytz.utc.localize(naive_date)
@@ -19,8 +19,8 @@ class DateHandler:
         return result
 
     @staticmethod
-    def parse_datetime(datetime):
-        result = parser.parse(datetime)
+    def parse_datetime(timestamp: datetime):
+        result = parser.parse(timestamp)
 
         if result.tzinfo is None:
             aware_date = pytz.utc.localize(result)

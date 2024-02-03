@@ -108,7 +108,7 @@ class RobotRss(object):
                              lastname=telegram_user.last_name,
                              language_code=telegram_user.language_code,
                              is_bot=telegram_user.is_bot,
-                             is_active=1)
+                             is_active=True)
 
         self.db.update_user(telegram_id=telegram_user.id, is_active=1)
 
