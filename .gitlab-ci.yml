@@ -1,0 +1,6 @@
+image: python:latest
+
+test:
+  script:
+    - pip install pytest  # you can also use tox
+    - pytest tests

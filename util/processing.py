@@ -1,11 +1,10 @@
 # /bin/bash/python/
 
-from telegram.error import (TelegramError, Unauthorized)
-from telegram import ParseMode
+from telegram.error import (TelegramError, Forbidden)
+from telegram.constants import ParseMode
 from multiprocessing.dummy import Pool as ThreadPool
 from threading import Thread as RunningThread
 from util.datehandler import DateHandler
-from util.database import DatabaseHandler
 from util.feedhandler import FeedHandler
 import datetime
 import threading
@@ -60,7 +59,8 @@ class BatchProcess(threading.Thread):
                 except:
                     traceback.print_exc()
                     message = "Something went wrong when I tried to parse the URL: \n\n " + \
-                        url[0] + "\n\nCould you please check that for me? Remove the url from your subscriptions using the /remove command, it seems like it does not work anymore!"
+                        url[0] + "\n\nCould you please check that for me? Remove the url from your subscriptions " \
+                                 "using the /remove command, it seems like it does not work anymore!"
                     self.bot.send_message(
                         chat_id=user[0], text=message, parse_mode=ParseMode.HTML)
 
@@ -77,7 +77,7 @@ class BatchProcess(threading.Thread):
             try:
                 self.bot.send_message(
                     chat_id=user[0], text=message, parse_mode=ParseMode.HTML)
-            except Unauthorized:
+            except Forbidden:
                 self.db.update_user(telegram_id=user[0], is_active=0)
             except TelegramError:
                 # handle all other telegram related errors

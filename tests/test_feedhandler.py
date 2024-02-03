@@ -7,8 +7,7 @@ class TestFeedHandler(unittest.TestCase):
     def test_parse_feed(self):
         url = "https://lorem-rss.herokuapp.com/feed"
         feed = FeedHandler.parse_feed(url)
-        self.assertIsNotNone(url)
-        url = "https://lorem-rss.herokuapp.com/feed"
+        self.assertIsNotNone(feed)
 
     def test_parse_feed_amount(self):
         url = "https://lorem-rss.herokuapp.com/feed"

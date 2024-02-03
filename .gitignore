@@ -3,3 +3,5 @@ resources/userdata/*
 *.pyc
 *.db
 !resources/sample-credentials.json
+venv
+.idea/

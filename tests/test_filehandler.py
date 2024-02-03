@@ -9,10 +9,7 @@ class TestFileHandler(unittest.TestCase):
         self.fh = FileHandler("..")
 
     def test_save_and_load_json(self):
-        sample_json = {}
-        sample_json["testbool"] = True
-        sample_json["teststring"] = "hello world"
-
+        sample_json = {"testbool": True, "teststring": "hello world"}
         self.fh.save_json(sample_json, "resources/sample.json")
         data = self.fh.load_json("resources/sample.json")
         self.assertEqual(data["testbool"], True)
