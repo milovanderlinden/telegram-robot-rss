@@ -2,7 +2,7 @@
 # encoding: utf-8
 import os
 
-from telegram import Update
+from telegram import Update, Chat
 from telegram.constants import ParseMode
 from telegram.error import TelegramError, Forbidden
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
@@ -10,6 +10,71 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from util.database import DatabaseHandler
 from util.feedhandler import FeedHandler
 from util.filehandler import FileHandler
+from util.processing import BatchProcess
+from util.telegram_helpers import extract_status_change
+
+
+async def greet_chat_members(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Greets new users in chats and announces when someone leaves"""
+    result = extract_status_change(update.chat_member)
+    if result is None:
+        return
+
+    was_member, is_member = result
+    cause_name = update.chat_member.from_user.mention_html()
+    member_name = update.chat_member.new_chat_member.user.mention_html()
+
+    if not was_member and is_member:
+        await update.effective_chat.send_message(
+            f"{member_name} was added by {cause_name}. Welcome!",
+            parse_mode=ParseMode.HTML,
+        )
+    elif was_member and not is_member:
+        await update.effective_chat.send_message(
+            f"{member_name} is no longer with us. Thanks a lot, {cause_name} ...",
+            parse_mode=ParseMode.HTML,
+        )
+
+
+async def track_chats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Tracks the chats the bot is in."""
+    result = extract_status_change(update.my_chat_member)
+    if result is None:
+        message = "I am not in any channels"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=message, disable_web_page_preview=True)
+        return
+    was_member, is_member = result
+    print(result)
+
+    # Let's check who is responsible for the change
+    cause_name = update.effective_user.full_name
+
+    # Handle chat types differently:
+    chat = update.effective_chat
+    if chat.type == Chat.PRIVATE:
+        if not was_member and is_member:
+            # This may not be really needed in practice because most clients will automatically
+            # send a /start command after the user unblocks the bot, and start_private_chat()
+            # will add the user to "user_ids".
+            # We're including this here for the sake of the example.
+            print("%s unblocked the bot", cause_name)
+            context.bot_data.setdefault("user_ids", set()).add(chat.id)
+        elif was_member and not is_member:
+            print("%s blocked the bot", cause_name)
+            context.bot_data.setdefault("user_ids", set()).discard(chat.id)
+    elif chat.type in [Chat.GROUP, Chat.SUPERGROUP]:
+        if not was_member and is_member:
+            print("%s added the bot to the group %s", cause_name, chat.title)
+            context.bot_data.setdefault("group_ids", set()).add(chat.id)
+        elif was_member and not is_member:
+            print("%s removed the bot from the group %s", cause_name, chat.title)
+            context.bot_data.setdefault("group_ids", set()).discard(chat.id)
+    elif not was_member and is_member:
+        print("%s added the bot to the channel %s", cause_name, chat.title)
+        context.bot_data.setdefault("channel_ids", set()).add(chat.id)
+    elif was_member and not is_member:
+        print("%s removed the bot from the channel %s", cause_name, chat.title)
+        context.bot_data.setdefault("channel_ids", set()).discard(chat.id)
 
 
 async def help_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -53,8 +118,9 @@ class RobotRss(object):
         self.fh = FileHandler("..")
 
         # Register webhook to telegram bot
+        #persistence = PicklePersistence(filepath="bot_data")
+        #self.application = ApplicationBuilder().token(telegram_token).persistence(persistence=persistence).build()
         self.application = ApplicationBuilder().token(telegram_token).build()
-
         # Regular commands
         self.application.add_handler(CommandHandler("start", self.start))
         self.application.add_handler(CommandHandler("stop", self.stop))
@@ -81,13 +147,18 @@ class RobotRss(object):
             filters=None,
             has_args=True)
         )
+        # Keep track of which chats the bot is in
+        # self.application.add_handler(ChatMemberHandler(track_chats, ChatMemberHandler.MY_CHAT_MEMBER))
+        self.application.add_handler(CommandHandler("show_chats", self.show_chats))
+        # self.application.add_handler(ChatMemberHandler(greet_chat_members, ChatMemberHandler.CHAT_MEMBER))
+        # self.application.add_handler(MessageHandler(filters.ALL, self.start_private_chat))
 
+        self.processing = BatchProcess(
+             database=self.db, update_interval=update_interval, bot=self.application.bot)
+
+        self.processing.start()
         # Start the Bot
-        # self.processing = BatchProcess(
-        #     database=self.db, update_interval=update_interval, bot=self.dispatcher.bot)
-
-        # self.processing.start()
-        self.application.run_polling()
+        self.application.run_polling(allowed_updates=Update.ALL_TYPES)
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """
@@ -106,7 +177,7 @@ class RobotRss(object):
                              username=telegram_user.username,
                              firstname=telegram_user.first_name,
                              lastname=telegram_user.last_name,
-                             language_code=telegram_user.language_code,
+                             language=telegram_user.language_code,
                              is_bot=telegram_user.is_bot,
                              is_active=True)
 
@@ -237,6 +308,7 @@ class RobotRss(object):
         telegram_user = update.message.from_user
 
         entries = self.db.get_urls_for_user(telegram_id=telegram_user.id)
+
         if entries is not None and len(entries) > 0:
             message = "Subscriptions"
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
@@ -244,6 +316,7 @@ class RobotRss(object):
                 message = "[" + entry[1] + "]\n " + entry[0]
             await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
             return
+
         message = "You have no subscriptions"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
 
@@ -257,6 +330,42 @@ class RobotRss(object):
 
         message = "Oh.. Okay, I will not send you any more news updates! If you change your mind and you want to " \
                   "receive messages from me again use /start command again!"
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+
+    async def start_private_chat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Greets the user and records that they started a chat with the bot if it's a private chat.
+        Since no `my_chat_member` update is issued when a user starts a private chat with the bot
+        for the first time, we have to track it explicitly here.
+        """
+
+        chat = update.effective_chat
+        self.db.add_chat(chat)
+
+        if chat.type != Chat.PRIVATE or chat.id in context.bot_data.get("user_ids", set()):
+            return
+
+        user_name = update.effective_user.full_name
+        context.bot_data.setdefault("user_ids", set()).add(chat.id)
+
+        await update.effective_message.reply_text(
+            f"Welcome {user_name}. Use /show_chats to see what chats I'm in."
+        )
+
+    async def show_chats(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Shows which chats the bot is in"""
+        entries = self.db.get_all_chats()
+
+        if entries is not None and len(entries) > 0:
+            message = "Chats:\n"
+            for entry in entries:
+                name = ""
+                if entry[1] is not None:
+                    name = f" '{entry[1]}'"
+                message += f"{entry[2]}: {entry[0]}{name}\n"
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+            return
+
+        message = "You have no chats"
         await context.bot.send_message(chat_id=update.effective_chat.id, text=message)
 
 

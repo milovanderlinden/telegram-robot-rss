@@ -24,8 +24,7 @@ class FeedHandler(object):
         Checks wether the given url provides a news feed. Return True if news are available, else False
         """
 
-        url_pattern = re.compile("((http(s?))):\/\/.*")
-        if not url_pattern.match(url):
+        if not _url_validator().match(url):
             return False
 
         feed = feedparser.parse(url)
@@ -48,8 +47,17 @@ class FeedHandler(object):
 
         string = string.lower()
 
-        url_pattern = re.compile("((http(s?))):\/\/.*")
-        if not url_pattern.match(string):
+        if not _url_validator().match(string):
             string = "http://" + string
 
         return string
+
+
+def _url_validator():
+    return re.compile(
+        r'^https?://'  # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain...
+        r'localhost|'  # localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
+        r'(?::\d+)?'  # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)

@@ -1,7 +1,7 @@
 import unittest
 import os
 from util.database import DatabaseHandler
-from util.datehandler import DateHandler as dh
+from util.datehandler import DateHandler
 
 
 class TestDatabaseHandler(unittest.TestCase):
@@ -14,13 +14,13 @@ class TestDatabaseHandler(unittest.TestCase):
                          firstname="John", lastname="Snow", language_code="DE", is_bot=False, is_active=True)
         result = self.db.get_user(telegram_id=25525)
 
-        self.assertEqual(result[0], 25525)
-        self.assertEqual(result[1], "TestDummy")
-        self.assertEqual(result[2], "John")
-        self.assertEqual(result[3], "Snow")
-        self.assertEqual(result[4], "DE")
-        self.assertFalse(result[5])
-        self.assertTrue(result[6])
+        self.assertEqual(result.telegram_id, 25525)
+        self.assertEqual(result.username, "TestDummy")
+        self.assertEqual(result.firstname, "John")
+        self.assertEqual(result.lastname, "Snow")
+        self.assertEqual(result.language, "DE")
+        self.assertFalse(result.is_bot)
+        self.assertTrue(result.is_active)
 
     def test_remove_user(self):
         self.db.add_user(telegram_id=25525, username="TestDummy",
@@ -35,30 +35,30 @@ class TestDatabaseHandler(unittest.TestCase):
         self.db.update_user(telegram_id=25525,
                             firstname="Jonathan", is_bot=True)
         result = self.db.get_user(telegram_id=25525)
-        self.assertEqual(result[0], 25525)
-        self.assertEqual(result[1], "TestDummy")
-        self.assertEqual(result[2], "Jonathan")
-        self.assertEqual(result[3], "Snow")
-        self.assertEqual(result[4], "DE")
-        self.assertTrue(result[5])
+        self.assertEqual(result.telegram_id, 25525)
+        self.assertEqual(result.username, "TestDummy")
+        self.assertEqual(result.firstname, "Jonathan")
+        self.assertEqual(result.lastname, "Snow")
+        self.assertEqual(result.language, "DE")
+        self.assertTrue(result.is_bot)
 
     def test_get_user(self):
         self.db.add_user(telegram_id=25525, username="TestDummy",
                          firstname="John", lastname="Snow", language_code="DE", is_bot=False, is_active=True)
         result = self.db.get_user(telegram_id=25525)
 
-        self.assertEqual(result[0], 25525)
-        self.assertEqual(result[1], "TestDummy")
-        self.assertEqual(result[2], "John")
-        self.assertEqual(result[3], "Snow")
-        self.assertEqual(result[4], "DE")
-        self.assertFalse(result[5])
+        self.assertEqual(result.telegram_id, 25525)
+        self.assertEqual(result.username, "TestDummy")
+        self.assertEqual(result.firstname, "John")
+        self.assertEqual(result.lastname, "Snow")
+        self.assertEqual(result.language, "DE")
+        self.assertFalse(result.is_bot)
 
     def test_add_url(self):
         self.db.add_url(url="https://lorem-rss.herokuapp.com/feed")
         result = self.db.get_url(url="https://lorem-rss.herokuapp.com/feed")
 
-        self.assertEqual(result[0], "https://lorem-rss.herokuapp.com/feed")
+        self.assertEqual(result.url, "https://lorem-rss.herokuapp.com/feed")
 
     def test_remove_url(self):
         self.db.add_url(url="https://lorem-rss.herokuapp.com/feed")
@@ -83,6 +83,7 @@ class TestDatabaseHandler(unittest.TestCase):
 
         result = self.db.get_users_for_url(
             url="https://lorem-rss.herokuapp.com/feed")
+        print(result)
         self.assertEqual(len(result), 0)
 
         result = self.db.get_url(url="https://lorem-rss.herokuapp.com/feed")
@@ -92,18 +93,18 @@ class TestDatabaseHandler(unittest.TestCase):
         self.db.add_url(url="https://lorem-rss.herokuapp.com/feed")
         entry = self.db.get_url(url="https://lorem-rss.herokuapp.com/feed")
 
-        timestamp = str(dh.get_datetime_now())
+        timestamp = str(DateHandler.get_datetime_now())
 
         self.db.update_url(
             url="https://lorem-rss.herokuapp.com/feed", last_updated=timestamp)
         result = self.db.get_url(url="https://lorem-rss.herokuapp.com/feed")
-        self.assertEqual(result[1], timestamp)
+        self.assertEqual(result.last_updated, timestamp)
 
     def test_get_url(self):
         self.db.add_url(url="https://lorem-rss.herokuapp.com/feed")
         result = self.db.get_url(url="https://lorem-rss.herokuapp.com/feed")
 
-        self.assertEqual(result[0], "https://lorem-rss.herokuapp.com/feed")
+        self.assertEqual(result.url, "https://lorem-rss.herokuapp.com/feed")
 
     def test_add_user_bookmark(self):
         self.db.add_user(telegram_id=25525, username="TestDummy",
@@ -223,7 +224,7 @@ class TestDatabaseHandler(unittest.TestCase):
             telegram_id=25525, url="https://lorem-rss.herokuapp.com/feed")
 
         web = self.db.get_url("https://lorem-rss.herokuapp.com/feed")
-        self.assertEqual(web[0], "https://lorem-rss.herokuapp.com/feed")
+        self.assertEqual(web.url, "https://lorem-rss.herokuapp.com/feed")
 
     def tearDown(self):
         base_path = os.path.abspath(os.path.dirname(__file__))
