@@ -177,7 +177,7 @@ class RobotRss(object):
                              username=telegram_user.username,
                              firstname=telegram_user.first_name,
                              lastname=telegram_user.last_name,
-                             language=telegram_user.language_code,
+                             language_code=telegram_user.language_code,
                              is_bot=telegram_user.is_bot,
                              is_active=True)
 
